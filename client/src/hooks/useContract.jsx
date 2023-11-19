@@ -2,14 +2,14 @@ import { useState, useCallback, useEffect } from "react";
 import { ethers } from "ethers";
 import { detractContractAddress, detractContractAbi } from "../constants/contract";
 
+import { useAuthContext } from "../contexts/AuthContext";
 import {
     useWeb3ModalSigner,
 } from "@web3modal/ethers5/react";
-
-
 export const useContract = () => {
 
-    const { signer } = useWeb3ModalSigner();
+    const { signer } = useAuthContext();
+
     const [contract, setContract] = useState(null);
 
     const getContract = useCallback(() => {
@@ -20,7 +20,7 @@ export const useContract = () => {
         } catch (e) {
             alert(e);
         }
-    }, []);
+    }, [signer]);
 
     const getVotingPeriod = async () => {
         try {
@@ -34,6 +34,8 @@ export const useContract = () => {
 
     const getMinimumStakeAmount = async () => {
         try {
+            console.log(signer)
+            console.log({ contract })
             const result = await contract.minStakingAmountForDetract();
             return result.toString();
         } catch (e) {
@@ -45,7 +47,9 @@ export const useContract = () => {
     const challengePaper = async (paper, evidence) => {
         try {
             const stakeAmount = await getMinimumStakeAmount();
-            const result = await contract.challengePaper(paper, evidence, { value: stakeAmount.toString() });
+            console.log({ stakeAmount })
+            const result = await contract.challengePaper(paper, evidence, { value: ethers.utils.parseEther("0.001") });
+            console.log({ result })
             return result.wait();
         } catch (e) {
             console.log(e);
@@ -74,8 +78,10 @@ export const useContract = () => {
     }
 
     useEffect(() => {
-        setContract(getContract());
-    }, [setContract])
+        const contract = new ethers.Contract(detractContractAddress, detractContractAbi, signer);
+        console.log({ contract })
+        setContract(contract);
+    }, [signer])
 
 
 
